@@ -24,7 +24,7 @@ class Instruct:
             if not os.path.exists(self.folder_name):
                 os.makedirs(self.folder_name)
 
-            if not os.path.exists(self.Instruction_path):
+            if os.path.exists(self.Instruction_path) or not os.path.exists(self.Instruction_path):
                 default_settings = {
                         "bot_info": {
                             "name": "NonSense-bot",
