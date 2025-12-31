@@ -30,13 +30,13 @@ class NonSense_Bot:
 
     
 
-        def active_listen(self):
-            with sr.Microphone() as mic:
-                print("\nListening for 'nonsense'....")
-                self.r.adjust_for_ambient_noise(mic, duration=0.5)
-                audio = self.r.listen(mic)
-                audio_text = self.r.recognize_google(audio).lower()
-                return audio_text
+    def active_listen(self):
+        with sr.Microphone() as mic:
+            print("\nListening for 'nonsense'....")
+            self.r.adjust_for_ambient_noise(mic, duration=0.5)
+            audio = self.r.listen(mic)
+            audio_text = self.r.recognize_google(audio).lower()
+            return audio_text
 
     def listening(self):
 
@@ -57,6 +57,8 @@ class NonSense_Bot:
                 except Exception as e:
                     print(f"Sorry error occurred: {e}")
 
+    def reply(self):
+        self.a
 
 def main():
     NS_bot = NonSense_Bot()
