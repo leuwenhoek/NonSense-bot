@@ -13,7 +13,7 @@ load_dotenv()
 API_KEY = os.environ.get("api_key")
 model = genai.GenerativeModel('gemini-1.5-pro')
 
-class Instruct:
+class Config:
         def __init__(self):
             self.folder_name = "config"
             self.Instruction_path = os.path.join(self.folder_name, "Instruction.json")
@@ -139,6 +139,11 @@ class NonSense_Bot:
     def reply(self):
         while True:
             said = self.active_listen()
+
+            prompt = f'''
+
+{said}
+'''
             response = model.generate_content(said)
             
 
@@ -153,4 +158,4 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    Instruct().get_locations()
+    Config().get_locations()
