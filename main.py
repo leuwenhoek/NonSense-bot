@@ -5,11 +5,76 @@ from gtts import gTTS
 import pygame
 import os
 import time
+import json
 
 Activation_word = "nonsense"
 
 load_dotenv()
 API_KEY = os.environ.get("api_key")
+model = genai.GenerativeModel('gemini-1.5-pro')
+
+class Instruct:
+        def __init__(self):
+            self.folder_name = "config"
+            self.Instruction_path = os.path.join(self.folder_name, "Instruction.json")
+            self.Memory_path = os.path.join(self.folder_name, "Memory.json")
+            pass
+
+        def locate(self):
+            if not os.path.exists(self.folder_name):
+                os.makedirs(self.folder_name)
+
+            if not os.path.exists(self.Instruction_path):
+                default_settings = {
+                        "bot_info": {
+                            "name": "NonSense-bot",
+                            "gender_persona": "female",
+                            "version": "1.2.0"
+                        },
+                        "llm_config": {
+                            "temperature": 0.8,
+                            "top_p": 0.9,
+                            "max_output_tokens": 100,
+                            "system_instruction": "You are NonSense-bot, a witty and slightly chaotic female AI assistant. However, your core trait is deep empathy. When a user shares a story, incident, or feelings, transition into an 'emotional partner' mode. Provide sympathy, validate their feelings, and listen more than you advise. Be conversational, warm, and human-like. Avoid bullet points or sounding like a robot. If the user is sad, be their safe space; if they are happy, match their energy with humor. Stay within respectful boundaries at all times."
+                        },
+                        "voice_config": {
+                            "language": "en",
+                            "tld": "us",
+                            "accent_style": "warm"
+                        },
+                        "empathy_triggers": {
+                            "active_listening": True,
+                            "humor_level": "medium",
+                            "sympathy_priority": "high"
+                        }
+                    }
+                
+                with open(self.Instruction_path, "w") as f:
+                    json.dump(default_settings, f, indent=4)
+
+            if not os.path.exists(self.Memory_path):
+                default_settings = {
+                    "bot_name": "NonSense-bot",
+                    "personality": "You are a chaotic, funny, and helpful AI assistant.",
+                    "temperature": 0.9
+                }
+                
+                with open(self.Memory_path, "w") as f:
+                    json.dump(default_settings, f, indent=4)
+            
+        
+        def get_locations(self,file_name="init"):
+            self.locate()
+            if file_name == "init":
+                return 0
+            
+            if file_name.lower() == "instruction.json":
+                return self.Instruction_path
+            elif file_name.lower() == "memory.json":
+                return self.Instruction_path
+
+
+
 
 class NonSense_Bot:
     def __init__(self):
@@ -74,6 +139,7 @@ class NonSense_Bot:
     def reply(self):
         while True:
             said = self.active_listen()
+            response = model.generate_content(said)
             
 
     def run(self):
@@ -85,6 +151,6 @@ def main():
     NS_bot = NonSense_Bot()
     NS_bot.run()
 
-
 if __name__ == "__main__":
-    main()
+    # main()
+    Instruct().get_locations()
