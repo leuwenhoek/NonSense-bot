@@ -14,6 +14,7 @@ from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
+from AppOpener import open as open_app
 
 console = Console()
 
@@ -167,6 +168,24 @@ class NonSense_Bot:
             with open(file_path, "w") as f:
                 json.dump(data, f, indent=4)
             self.speak("Got it. I've put that in my long-term memory.")
+        elif words[0] in ['start', 'open']:
+            if len(words) > 1:
+                app_name = words[1]
+                self.speak(f"Opening {app_name}.")
+                try:
+                    open_app(app_name, match_closest=True)
+                except Exception as e:
+                    self.speak(f"Sorry, I am unable to locate {app_name}.")
+            else:
+                self.speak("Which application should I open?")
+            return True
+
+        elif words[0] in ['nonsense', 'non-sense']:
+            if len(words) > 1:
+                if words[1] in ['reset', 'lock']:
+                    self.speak("System locked")
+                    self.listening() 
+                    return True
             return True 
         return False
 
