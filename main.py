@@ -15,6 +15,7 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
 from AppOpener import open as open_app
+from AppOpener import close as close_app
 
 console = Console()
 
@@ -174,6 +175,16 @@ class NonSense_Bot:
                 self.speak(f"Opening {app_name}.")
                 try:
                     open_app(app_name, match_closest=True)
+                except Exception as e:
+                    self.speak(f"Sorry, I am unable to locate {app_name}.")
+            else:
+                self.speak("Which application should I open?")
+        elif words[0] in ['close']:
+            if len(words)>1:
+                app_name = words[1]
+                self.speak(f"Closing {app_name}")
+                try:
+                    close_app(app_name, match_closest=True)
                 except Exception as e:
                     self.speak(f"Sorry, I am unable to locate {app_name}.")
             else:
