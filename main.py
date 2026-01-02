@@ -10,12 +10,14 @@ import threading
 import sys
 import itertools
 import pyttsx3
+import pyautogui
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
 from AppOpener import open as open_app
-from AppOpener import close as close_app
+from AppOpener import close
+import pygetwindow as gw
 
 console = Console()
 
@@ -169,6 +171,7 @@ class NonSense_Bot:
             with open(file_path, "w") as f:
                 json.dump(data, f, indent=4)
             self.speak("Got it. I've put that in my long-term memory.")
+
         elif words[0] in ['start', 'open']:
             if len(words) > 1:
                 app_name = words[1]
@@ -179,16 +182,47 @@ class NonSense_Bot:
                     self.speak(f"Sorry, I am unable to locate {app_name}.")
             else:
                 self.speak("Which application should I open?")
+            return True
+        
         elif words[0] in ['close']:
-            if len(words)>1:
+            if len(words) > 1:
                 app_name = words[1]
-                self.speak(f"Closing {app_name}")
+                self.speak(f"Closing {app_name}.")
                 try:
-                    close_app(app_name, match_closest=True)
+                    close(app_name, match_closest=True)
                 except Exception as e:
                     self.speak(f"Sorry, I am unable to locate {app_name}.")
             else:
-                self.speak("Which application should I open?")
+                self.speak("Which application should I close?")
+                return True
+            
+        elif words[0] in ['press', 'presskey', 'tap', 'make']:
+            KEY_MAP = {
+                'alter': 'alt', 'control': 'ctrl', 'window': 'tab',
+                'super': 'win', 'function': 'fn',
+                'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+                'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'zero': '0'
+            }
+
+            start_index = 2 if len(words) > 1 and words[1] in ['ki', 'key'] else 1
+            raw_keys = words[start_index:]
+            fillers = {'and', 'plus', 'then', 'with'}
+            
+            keys_to_press = []
+            for k in raw_keys:
+                if k not in fillers:
+                    translated_key = KEY_MAP.get(k, k)
+                    keys_to_press.append(translated_key)
+
+            if keys_to_press:
+                try:
+                    time.sleep(0.1) 
+                    pyautogui.hotkey(*keys_to_press)
+                    self.speak(f"Pressed {' '.join(keys_to_press)}")
+                except Exception:
+                    self.speak("I didn't recognize one of those keys.")
+            else:
+                self.speak("What should I press?")
             return True
 
         elif words[0] in ['nonsense', 'non-sense']:
@@ -198,19 +232,101 @@ class NonSense_Bot:
                     self.listening() 
                     return True
             return True 
+        elif words[0] in ['switch', 'focus']:
+            target_name = " ".join([w for w in words[1:] if w not in ['to', 'the', 'window']])
+
+            if target_name:
+                import pygetwindow as gw
+                try:
+                    all_windows = gw.getAllWindows()
+                    target_win = None
+                    for w in all_windows:
+                        if target_name.lower() in w.title.lower() and w.title != "":
+                            target_win = w
+                            break
+
+                    if target_win:
+                        if target_win.isMinimized:
+                            target_win.restore()
+
+                        try:
+                            target_win.activate()
+                        except Exception:
+                            pyautogui.press('alt')
+                            target_win.activate()
+                            
+                        self.speak(f"Switching to {target_name}.")
+                    else:
+                        self.speak(f"I couldn't find {target_name}.")
+                except Exception as e:
+                    print(f"Internal Error: {e}") # Check your console for the specific error
+                    self.speak("I'm having trouble grabbing that window's handle.")
+            else:
+                self.speak("Which window should I switch to?")
+            return True
+        elif words[0] in ['move', 'go', 'cursor']:
+            directions = {'up', 'down', 'left', 'right'}
+            num_map = {'one': 10, 'two': 20, 'three': 30, 'four': 40, 'five': 50, 
+                       'ten': 100, 'twenty': 200, 'fifty': 500,'hundred': 1000}
+            
+            amount = 50 
+            selected_direction = None
+
+            for word in words:
+                if word in directions:
+                    selected_direction = word
+                elif word.isdigit():
+                    amount = int(word) * 50 
+                elif word in num_map:
+                    amount = num_map[word]
+
+            if selected_direction:
+                x, y = 0, 0
+                if selected_direction == 'up': y = -amount
+                elif selected_direction == 'down': y = amount
+                elif selected_direction == 'left': x = -amount
+                elif selected_direction == 'right': x = amount
+                
+                try:
+                    pyautogui.moveRel(x, y, duration=0.2)
+                except pyautogui.FailSafeException:
+                    self.speak("I reached the edge of the screen and had to stop.")
+                return True
+            
+            else:
+                self.speak("Which direction should I move?")
+            
+            return True
+        elif words[0] in ['click', 'tap', 'select']:
+            try:
+                if 'double' in words:
+                    pyautogui.doubleClick()
+                    self.speak("Double clicked.")
+                elif 'right' in words:
+                    pyautogui.rightClick()
+                    self.speak("Right clicked.")
+                else:
+                    pyautogui.click()
+            except Exception as e:
+                self.speak("I couldn't perform the click.")
+            return True
         return False
 
     def reply(self):
         while True:
             audio_text = self.active_listen()
             if not audio_text: continue
-            if self.special_commands(audio_text): continue
             
-            config = Config()
-            instructions = config.load_JSON(config.get_locations('instruction.json'))
-            memory = config.load_JSON(config.get_locations('memory.json'))
+            clean_text = audio_text.replace("godown", "go down").replace("goup", "go up").replace("goleft", "go left").replace("goright", "go right")
+            
+            if self.special_commands(clean_text): continue
+            
+            try:
+                config = Config()
+                instructions = config.load_JSON(config.get_locations('instruction.json'))
+                memory = config.load_JSON(config.get_locations('memory.json'))
 
-            prompt = f'''
+                prompt = f'''
 # IDENTITY & PERSONA
 - You are {instructions['bot_info']['name']}, a {instructions['bot_info']['gender_persona']} friend.
 - Your personality is: {instructions['llm_config']['system_instruction']}
@@ -233,15 +349,24 @@ class NonSense_Bot:
 Respond now in simple, natural English as {instructions['bot_info']['name']}:
 '''
 
-            with console.status("[bold blue]Thinking...", spinner="arc"):
-                response = model.generate_content(prompt)
-                bot_text = response.text 
-            
-            self.speak(bot_text)
+                with console.status("[bold blue]Thinking...", spinner="arc"):
+                    response = model.generate_content(prompt)
+                    bot_text = response.text 
+                
+                self.speak(bot_text)
+
+            except Exception as e:
+                if "429" in str(e) or "ResourceExhausted" in str(e):
+                    self.speak("My brain is a bit tired from the API limits. Try using my special commands like move, open, or press for now!")
+                else:
+                    self.speak("I ran into a little glitch in my system.")
+                print(f"Error details: {e}")
 
     def run(self):
         self.listening()
         self.reply()
+
+
 
 if __name__ == "__main__":
     bot = NonSense_Bot()
